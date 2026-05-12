@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 // SEO configuration used by the SEOHead component below.
 // For production, place the same title, description, Open Graph, and JSON-LD data in the actual HTML <head> or your framework's SEO layer.
@@ -1353,6 +1354,7 @@ export default function VriftedWebsite() {
           </div>
         </div>
       </footer>
+      <Analytics />
     </div>
   );
 }
