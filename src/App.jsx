@@ -355,9 +355,10 @@ function GlassCard({ children, className = "" }) {
 export default function VriftedWebsite() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [submissionEmailUrl, setSubmissionEmailUrl] = useState("");
   const [submissionText, setSubmissionText] = useState("");
   const [copiedSubmission, setCopiedSubmission] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
   const [phoneModalOpen, setPhoneModalOpen] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [heroScore, setHeroScore] = useState(0);
@@ -462,49 +463,54 @@ export default function VriftedWebsite() {
     return () => observer.disconnect();
   }, []);
 
-  // Contact form handler. It formats the form information into an email draft for info@vrifted.com.
-  function handleSubmit(event) {
+  // Contact form handler. It sends the form details directly to info@vrifted.com through FormSubmit.
+  async function handleSubmit(event) {
     event.preventDefault();
 
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const submission = {
-      name: formData.get("name"),
-      email: formData.get("email"),
-      contactNumber: formData.get("contactNumber"),
-      businessName: formData.get("businessName"),
-      websiteUrl: formData.get("websiteUrl"),
-      supportNeed: formData.get("supportNeed"),
-      biggestChallenge: formData.get("biggestChallenge"),
-    };
+    const businessName = formData.get("businessName") || "New Business";
+    const emailSubject = `Free E-Commerce Store Audit Request - ${businessName}`;
 
-    const emailSubject = `Free E-Commerce Store Audit Request - ${submission.businessName}`;
-    const emailBody = [
-      "New free e-commerce store audit and discovery call request:",
-      "",
-      `Name: ${submission.name}`,
-      `Email Address: ${submission.email}`,
-      `WhatsApp / Contact Number: ${submission.contactNumber}`,
-      `Business Name: ${submission.businessName}`,
-      `Website URL: ${submission.websiteUrl}`,
-      `What they need help with: ${submission.supportNeed}`,
-      "",
-      "Biggest Current Challenge:",
-      submission.biggestChallenge,
-    ].join("\n");
+    formData.append("_subject", emailSubject);
+    formData.append("_template", "table");
+    formData.append("_captcha", "false");
+    formData.append("_honey", "");
+    formData.append("Submitted From", typeof window !== "undefined" ? window.location.href : "Vrifted website");
 
-    const mailtoUrl = `mailto:info@vrifted.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+    const readableSubmission = Array.from(formData.entries())
+      .filter(([key]) => !key.startsWith("_"))
+      .map(([key, value]) => `${key}: ${value}`)
+      .join("\n");
 
-    setSubmissionEmailUrl(mailtoUrl);
-    setSubmissionText(`${emailSubject}
-
-${emailBody}`);
+    setIsSubmitting(true);
+    setFormError("");
+    setSubmissionText(`${emailSubject}\n\n${readableSubmission}`);
     setCopiedSubmission(false);
-    setSubmitted(true);
-    form.reset();
+
+    try {
+      const response = await fetch("https://formsubmit.co/ajax/info@vrifted.com", {
+        method: "POST",
+        body: formData,
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Form submission failed.");
+      }
+
+      form.reset();
+      setSubmitted(true);
+    } catch (error) {
+      setFormError("Something went wrong while sending your request. Please try again or email info@vrifted.com directly.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  // Copy fallback for users whose browser blocks mail links or who prefer manual email sending.
+  // Copy fallback for users whose browser blocks the form service or who prefer manual email sending.
   async function copySubmissionDetails() {
     if (!submissionText) return;
 
@@ -1252,7 +1258,12 @@ ${emailBody}`);
                   <label className="block sm:col-span-2"><span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-white/52">What do you need help with?</span><select required name="supportNeed" className="w-full rounded-2xl border border-white/10 bg-white/[0.055] px-4 py-3 text-sm text-white outline-none transition focus:border-[#03cacd]"><option className="bg-[#0f011e]" value="">Select one</option><option className="bg-[#0f011e]">New store build</option><option className="bg-[#0f011e]">Store redesign</option><option className="bg-[#0f011e]">Operations support</option><option className="bg-[#0f011e]">Build + operations growth plan</option></select></label>
                   <label className="block sm:col-span-2"><span className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-white/52">Biggest current challenge</span><textarea required name="biggestChallenge" rows={4} className="w-full resize-none rounded-2xl border border-white/10 bg-white/[0.055] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#03cacd]" placeholder="Tell us what is slowing the store down or blocking launch." /></label>
                 </div>
-                <button type="submit" className="cta-button mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#03cacd] px-6 py-4 text-sm font-black text-[#0f011e] transition hover:bg-white hover:shadow-[0_0_38px_rgba(3,202,205,0.38)] focus:outline-none focus:ring-2 focus:ring-[#03cacd]/70 focus:ring-offset-2 focus:ring-offset-[#0f011e]">Get Your Free E-Commerce Store Audit & Discovery Call <Icon name="arrow" className="h-4 w-4" /></button>
+                <button type="submit" disabled={isSubmitting} className="cta-button mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#03cacd] px-6 py-4 text-sm font-black text-[#0f011e] transition hover:bg-white hover:shadow-[0_0_38px_rgba(3,202,205,0.38)] focus:outline-none focus:ring-2 focus:ring-[#03cacd]/70 focus:ring-offset-2 focus:ring-offset-[#0f011e] disabled:cursor-not-allowed disabled:opacity-70">{isSubmitting ? "Sending request..." : "Get Your Free E-Commerce Store Audit & Discovery Call"} <Icon name="arrow" className="h-4 w-4" /></button>
+                {formError && (
+                  <p className="mt-4 rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-sm font-semibold text-red-100">
+                    {formError}
+                  </p>
+                )}
               </form>
             </div>
           </div>
@@ -1303,29 +1314,26 @@ ${emailBody}`);
         </div>
       )}
 
-      {/* Form submission modal: confirms the request and provides email/copy actions. */}
+      {/* Form submission modal: confirms the request and provides copy actions. */}
       {submitted && (
         <div className="success-modal-backdrop modal-scroll-lock fixed inset-0 z-[80] flex items-center justify-center bg-[#0f011e]/82 px-5 backdrop-blur-xl" role="dialog" aria-modal="true" aria-labelledby="audit-success-title">
           <div className="success-modal-card w-full max-w-lg rounded-[2rem] border border-[#03cacd]/35 bg-[#0f011e] p-6 text-center shadow-2xl shadow-[#03cacd]/15 sm:p-8">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#03cacd] text-[#0f011e] shadow-2xl shadow-[#03cacd]/20">
               <Icon name="check" className="h-8 w-8" />
             </div>
-            <p className="mb-4 inline-flex rounded-full border border-[#03cacd]/25 bg-[#03cacd]/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-[#03cacd]">Request received</p>
-            <h2 id="audit-success-title" className="text-2xl font-black tracking-[-0.04em] text-white sm:text-3xl">Your free audit and discovery call request is ready.</h2>
+            <p className="mb-4 inline-flex rounded-full border border-[#03cacd]/25 bg-[#03cacd]/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-[#03cacd]">Request sent</p>
+            <h2 id="audit-success-title" className="text-2xl font-black tracking-[-0.04em] text-white sm:text-3xl">Your free audit and discovery call request has been sent.</h2>
             <p className="mt-4 text-sm leading-7 text-white/68">
-              Thank you for reaching out to VRIFTED. Open the prepared email draft below to send your request to info@vrifted.com, then check your inbox for next steps and available discovery call times.
+              Thank you for reaching out to VRIFTED. Your details were sent to info@vrifted.com. Please check your inbox soon for next steps and available discovery call times.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <a href={submissionEmailUrl || "mailto:info@vrifted.com"} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#03cacd] px-6 py-3 text-sm font-black text-[#0f011e] transition hover:bg-white sm:w-auto">
-                Open email draft <Icon name="arrow" className="h-4 w-4" />
-              </a>
               <button type="button" onClick={copySubmissionDetails} className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-black text-white transition hover:border-[#03cacd]/50 hover:bg-[#03cacd]/10 sm:w-auto">
-                {copiedSubmission ? "Copied" : "Copy details"}
+                {copiedSubmission ? "Details copied" : "Copy submitted details"}
+              </button>
+              <button type="button" onClick={() => setSubmitted(false)} className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white px-6 py-3 text-sm font-black text-[#0f011e] transition hover:bg-[#03cacd] sm:w-auto">
+                Close
               </button>
             </div>
-            <button type="button" onClick={() => setSubmitted(false)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white px-6 py-3 text-sm font-black text-[#0f011e] transition hover:bg-[#03cacd] sm:w-auto">
-              Close
-            </button>
           </div>
         </div>
       )}
