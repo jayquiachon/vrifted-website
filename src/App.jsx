@@ -1317,19 +1317,6 @@ export default function VriftedWebsite() {
               From <span className="font-black text-white">April 14 to 16 only</span>, get any Vrifted service with a <span className="font-black text-[#03cacd]">50% discount</span>. Use this window to finally move from scattered ideas, backend stress, and unfinished plans into a store system built to launch, manage, and grow.
             </p>
 
-            <div className="relative mt-5 grid gap-2 sm:grid-cols-3">
-              {[
-                { icon: "store", label: "Store Build" },
-                { icon: "package", label: "Operations Support" },
-                { icon: "trend", label: "Growth Plan" },
-              ].map((item) => (
-                <div key={item.label} className="rounded-[1rem] border border-white/10 bg-white/[0.055] p-3">
-                  <Icon name={item.icon} className="mx-auto mb-2 h-4 w-4 text-[#03cacd]" />
-                  <p className="text-[0.65rem] font-black uppercase tracking-[0.1em] text-white/70">{item.label}</p>
-                </div>
-              ))}
-            </div>
-
             <div className="relative mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button type="button" onClick={goToAuditForm} className="cta-button inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#03cacd] px-5 py-3 text-sm font-black text-[#0f011e] transition hover:bg-white hover:shadow-[0_0_38px_rgba(3,202,205,0.38)] sm:w-auto">
                 Claim 50% Discount <Icon name="arrow" className="h-4 w-4" />
