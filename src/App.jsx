@@ -367,14 +367,6 @@ export default function VriftedWebsite() {
   const processRef = useRef(null);
   const pageRef = useRef(null);
 
-  // Opening promotion popup delay. The modal appears shortly after the page loads instead of immediately.
-  useEffect(() => {
-    const promoDelay = window.setTimeout(() => {
-      setPromoModalOpen(true);
-    }, 2000);
-
-    return () => window.clearTimeout(promoDelay);
-  }, []);
 
   // Hero score counter animation. It respects reduced-motion user preferences.
   useEffect(() => {
@@ -473,13 +465,7 @@ export default function VriftedWebsite() {
     return () => observer.disconnect();
   }, []);
 
-  // Promotion CTA handler. It closes the promo popup and scrolls visitors to the audit form.
-  function goToAuditForm() {
-    setPromoModalOpen(false);
-    window.setTimeout(() => {
-      document.getElementById("audit")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 80);
-  }
+ 
 
   // Contact form handler. It sends the form details directly to info@vrifted.com through FormSubmit.
   async function handleSubmit(event) {
@@ -1287,51 +1273,6 @@ export default function VriftedWebsite() {
           </div>
         </section>
       </main>
-
-      {/* Opening promotion modal: highlights the limited-time 50% service discount and sends visitors to the contact form. */}
-      {promoModalOpen && (
-        <div className="success-modal-backdrop modal-scroll-lock fixed inset-0 z-[90] flex items-center justify-center bg-[#0f011e]/86 px-5 backdrop-blur-xl" role="dialog" aria-modal="true" aria-labelledby="promo-modal-title">
-          <div className="success-modal-card relative w-full max-w-md overflow-hidden rounded-[1.75rem] border border-[#03cacd]/35 bg-[#0f011e] p-5 text-center shadow-2xl shadow-[#03cacd]/20 sm:max-w-lg sm:p-6">
-            <button type="button" onClick={() => setPromoModalOpen(false)} className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.055] text-white/70 transition hover:border-[#03cacd]/50 hover:text-[#03cacd]" aria-label="Close promotion popup">
-              <Icon name="x" className="h-4 w-4" />
-            </button>
-
-            <div className="pointer-events-none absolute -left-16 -top-16 h-44 w-44 rounded-full bg-[#03cacd]/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-20 -right-16 h-56 w-56 rounded-full bg-[#03cacd]/14 blur-3xl" />
-
-            <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-[1.5rem] border border-[#03cacd]/35 bg-[#03cacd]/10 shadow-2xl shadow-[#03cacd]/10">
-              <div className="absolute inset-2 rounded-[1.15rem] border border-white/10" />
-              <div className="text-center">
-                <p className="text-xl font-black tracking-[-0.08em] text-[#03cacd]">50%</p>
-                <p className="mt-1 text-xs font-black uppercase tracking-[0.18em] text-white/70">Off</p>
-              </div>
-            </div>
-
-            <p className="relative mb-3 inline-flex rounded-full border border-[#03cacd]/25 bg-[#03cacd]/10 px-3 py-2 text-[0.68rem] font-black uppercase tracking-[0.16em] text-[#03cacd]">
-              Limited-Time Launch Promotion
-            </p>
-            <h2 id="promo-modal-title" className="relative mx-auto max-w-md text-2xl font-black leading-tight tracking-[-0.055em] text-white sm:text-3xl">
-              Build the store you have been putting off — for half the price.
-            </h2>
-            <p className="relative mx-auto mt-4 max-w-md text-sm leading-7 text-white/70">
-              From <span className="font-black text-white">April 14 to 16 only</span>, get any Vrifted service with a <span className="font-black text-[#03cacd]">50% discount</span>. Use this window to finally move from scattered ideas, backend stress, and unfinished plans into a store system built to launch, manage, and grow.
-            </p>
-
-            <div className="relative mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <button type="button" onClick={goToAuditForm} className="cta-button inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#03cacd] px-5 py-3 text-sm font-black text-[#0f011e] transition hover:bg-white hover:shadow-[0_0_38px_rgba(3,202,205,0.38)] sm:w-auto">
-                Claim 50% Discount <Icon name="arrow" className="h-4 w-4" />
-              </button>
-              <button type="button" onClick={() => setPromoModalOpen(false)} className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-black text-white transition hover:border-[#03cacd]/50 hover:bg-[#03cacd]/10 sm:w-auto">
-                Maybe later
-              </button>
-            </div>
-
-            <p className="relative mt-4 text-[0.68rem] font-semibold leading-5 text-white/45">
-              Discount applies to any listed Vrifted service booked during the promo period.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Email modal: displays the business email and gives visitors a direct mail link. */}
       {emailModalOpen && (
