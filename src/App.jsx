@@ -481,51 +481,38 @@ export default function VriftedWebsite() {
     }, 80);
   }
 
-  // Contact form handler. It sends the form details directly to info@vrifted.com through FormSubmit.
-  async function handleSubmit(event) {
-    event.preventDefault();
-
+  // Contact form handler. The form is submitted through a normal HTML POST to FormSubmit.
+  // This avoids browser CORS issues that can happen with fetch/AJAX submissions.
+  function handleSubmit(event) {
     const form = event.currentTarget;
     const formData = new FormData(form);
     const businessName = formData.get("businessName") || "New Business";
     const emailSubject = `Free E-Commerce Store Audit Request - ${businessName}`;
 
-    formData.append("_subject", emailSubject);
-    formData.append("_template", "table");
-    formData.append("_captcha", "false");
-    formData.append("_honey", "");
-    formData.append("Submitted From", typeof window !== "undefined" ? window.location.href : "Vrifted website");
-
-    const readableSubmission = Array.from(formData.entries())
-      .filter(([key]) => !key.startsWith("_"))
-      .map(([key, value]) => `${key}: ${value}`)
-      .join("\n");
+    const readableSubmission = [
+      `Name: ${formData.get("name") || ""}`,
+      `Email Address: ${formData.get("email") || ""}`,
+      `WhatsApp / Contact Number: ${formData.get("contactNumber") || ""}`,
+      `Business Name: ${formData.get("businessName") || ""}`,
+      `Website URL: ${formData.get("websiteUrl") || ""}`,
+      `What they need help with: ${formData.get("supportNeed") || ""}`,
+      "",
+      "Biggest Current Challenge:",
+      formData.get("biggestChallenge") || "",
+      "",
+      `Submitted From: ${typeof window !== "undefined" ? window.location.href : "Vrifted website"}`,
+    ].join("\n");
 
     setIsSubmitting(true);
     setFormError("");
     setSubmissionText(`${emailSubject}\n\n${readableSubmission}`);
     setCopiedSubmission(false);
 
-    try {
-      const response = await fetch("https://formsubmit.co/ajax/info@vrifted.com", {
-        method: "POST",
-        body: formData,
-        headers: {
-          Accept: "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Form submission failed.");
-      }
-
+    window.setTimeout(() => {
       form.reset();
-      setSubmitted(true);
-    } catch (error) {
-      setFormError("Something went wrong while sending your request. Please try again or email info@vrifted.com directly.");
-    } finally {
       setIsSubmitting(false);
-    }
+      setSubmitted(true);
+    }, 900);
   }
 
   // Copy fallback for users whose browser blocks the form service or who prefer manual email sending.
@@ -1262,7 +1249,12 @@ export default function VriftedWebsite() {
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="rounded-[2rem] border border-white/10 bg-[#0f011e]/85 p-5 sm:p-7">
+              <form action="https://formsubmit.co/info@vrifted.com" method="POST" target="formSubmitFrame" onSubmit={handleSubmit} className="rounded-[2rem] border border-white/10 bg-[#0f011e]/85 p-5 sm:p-7">
+                <input type="hidden" name="_subject" value="New Free E-Commerce Store Audit Request" />
+                <input type="hidden" name="_template" value="table" />
+                <input type="hidden" name="_captcha" value="false" />
+                <input type="hidden" name="_honey" value="" />
+                <input type="hidden" name="_next" value="https://vrifted-website.vercel.app/" />
                 <div className="mb-5 rounded-[1.5rem] border border-[#03cacd]/25 bg-[#03cacd]/10 p-4">
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-[#03cacd]">What happens after you submit?</p>
                   <p className="mt-2 text-sm leading-7 text-white/70">Vrifted will review your details, identify the best starting point for your store, and email you the next steps with available times for your discovery call.</p>
@@ -1288,6 +1280,8 @@ export default function VriftedWebsite() {
         </section>
       </main>
 
+      <iframe name="formSubmitFrame" title="Form submission frame" className="hidden" />
+
       {/* Opening promotion modal: highlights the limited-time 50% service discount and sends visitors to the contact form. */}
       {promoModalOpen && (
         <div className="success-modal-backdrop modal-scroll-lock fixed inset-0 z-[90] flex items-center justify-center bg-[#0f011e]/86 px-5 backdrop-blur-xl" role="dialog" aria-modal="true" aria-labelledby="promo-modal-title">
@@ -1302,7 +1296,7 @@ export default function VriftedWebsite() {
             <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-[1.5rem] border border-[#03cacd]/35 bg-[#03cacd]/10 shadow-2xl shadow-[#03cacd]/10">
               <div className="absolute inset-2 rounded-[1.15rem] border border-white/10" />
               <div className="text-center">
-                <p className="text-xl font-black tracking-[-0.08em] text-[#03cacd]">50%</p>
+                <p className="text-3xl font-black tracking-[-0.08em] text-[#03cacd]">50%</p>
                 <p className="mt-1 text-xs font-black uppercase tracking-[0.18em] text-white/70">Off</p>
               </div>
             </div>
@@ -1316,6 +1310,19 @@ export default function VriftedWebsite() {
             <p className="relative mx-auto mt-4 max-w-md text-sm leading-7 text-white/70">
               From <span className="font-black text-white">April 14 to 16 only</span>, get any Vrifted service with a <span className="font-black text-[#03cacd]">50% discount</span>. Use this window to finally move from scattered ideas, backend stress, and unfinished plans into a store system built to launch, manage, and grow.
             </p>
+
+            <div className="relative mt-5 grid gap-2 sm:grid-cols-3">
+              {[
+                { icon: "store", label: "Store Build" },
+                { icon: "package", label: "Operations Support" },
+                { icon: "trend", label: "Growth Plan" },
+              ].map((item) => (
+                <div key={item.label} className="rounded-[1rem] border border-white/10 bg-white/[0.055] p-3">
+                  <Icon name={item.icon} className="mx-auto mb-2 h-4 w-4 text-[#03cacd]" />
+                  <p className="text-[0.65rem] font-black uppercase tracking-[0.1em] text-white/70">{item.label}</p>
+                </div>
+              ))}
+            </div>
 
             <div className="relative mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button type="button" onClick={goToAuditForm} className="cta-button inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#03cacd] px-5 py-3 text-sm font-black text-[#0f011e] transition hover:bg-white hover:shadow-[0_0_38px_rgba(3,202,205,0.38)] sm:w-auto">
