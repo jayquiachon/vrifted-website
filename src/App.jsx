@@ -17,6 +17,10 @@ const siteSeo = {
   instagram: "https://www.instagram.com/vrifted_/",
 };
 
+// Web3Forms access key for direct email delivery.
+// Replace this placeholder with the access key sent to info@vrifted.com from Web3Forms.
+const WEB3FORMS_ACCESS_KEY = "c121b18a-2f1e-49a3-b31f-39b5cc20ef90";
+
 // Main navigation items. These connect to sections on the same landing page.
 const navItems = [
   { label: "SERVICES", href: "#services" },
@@ -481,38 +485,80 @@ export default function VriftedWebsite() {
     }, 80);
   }
 
-  // Contact form handler. The form is submitted through a normal HTML POST to FormSubmit.
-  // This avoids browser CORS issues that can happen with fetch/AJAX submissions.
-  function handleSubmit(event) {
+  // Contact form handler. It sends the form details directly to info@vrifted.com through Web3Forms.
+  async function handleSubmit(event) {
+    event.preventDefault();
+
     const form = event.currentTarget;
     const formData = new FormData(form);
-    const businessName = formData.get("businessName") || "New Business";
-    const emailSubject = `Free E-Commerce Store Audit Request - ${businessName}`;
+
+    if (!WEB3FORMS_ACCESS_KEY || WEB3FORMS_ACCESS_KEY === "REPLACE_WITH_YOUR_WEB3FORMS_ACCESS_KEY") {
+      setFormError("The contact form is not fully connected yet. Please add your Web3Forms access key in the code.");
+      return;
+    }
+
+    const submission = {
+      access_key: WEB3FORMS_ACCESS_KEY,
+      subject: `Free E-Commerce Store Audit Request - ${formData.get("businessName") || "New Business"}`,
+      from_name: "Vrifted Website",
+      name: formData.get("name") || "",
+      email: formData.get("email") || "",
+      contact_number: formData.get("contactNumber") || "",
+      business_name: formData.get("businessName") || "",
+      website_url: formData.get("websiteUrl") || "",
+      support_need: formData.get("supportNeed") || "",
+      biggest_challenge: formData.get("biggestChallenge") || "",
+      submitted_from: typeof window !== "undefined" ? window.location.href : "Vrifted website",
+    };
 
     const readableSubmission = [
-      `Name: ${formData.get("name") || ""}`,
-      `Email Address: ${formData.get("email") || ""}`,
-      `WhatsApp / Contact Number: ${formData.get("contactNumber") || ""}`,
-      `Business Name: ${formData.get("businessName") || ""}`,
-      `Website URL: ${formData.get("websiteUrl") || ""}`,
-      `What they need help with: ${formData.get("supportNeed") || ""}`,
+      `Name: ${submission.name}`,
+      `Email Address: ${submission.email}`,
+      `WhatsApp / Contact Number: ${submission.contact_number}`,
+      `Business Name: ${submission.business_name}`,
+      `Website URL: ${submission.website_url}`,
+      `What they need help with: ${submission.support_need}`,
       "",
       "Biggest Current Challenge:",
-      formData.get("biggestChallenge") || "",
+      submission.biggest_challenge,
       "",
-      `Submitted From: ${typeof window !== "undefined" ? window.location.href : "Vrifted website"}`,
+      `Submitted From: ${submission.submitted_from}`,
     ].join("\n");
 
     setIsSubmitting(true);
     setFormError("");
-    setSubmissionText(`${emailSubject}\n\n${readableSubmission}`);
+    setSubmissionText(`${submission.subject}
+
+${readableSubmission}`);
     setCopiedSubmission(false);
 
-    window.setTimeout(() => {
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(submission),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "The form service rejected the request.");
+      }
+
       form.reset();
-      setIsSubmitting(false);
       setSubmitted(true);
-    }, 900);
+    } catch (error) {
+      setFormError(
+        error?.message
+          ? `${error.message} If this keeps happening, please email info@vrifted.com directly.`
+          : "Something went wrong while sending your request. Please try again or email info@vrifted.com directly."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   // Copy fallback for users whose browser blocks the form service or who prefer manual email sending.
@@ -1249,12 +1295,7 @@ export default function VriftedWebsite() {
                 </div>
               </div>
 
-              <form action="https://formsubmit.co/info@vrifted.com" method="POST" target="formSubmitFrame" onSubmit={handleSubmit} className="rounded-[2rem] border border-white/10 bg-[#0f011e]/85 p-5 sm:p-7">
-                <input type="hidden" name="_subject" value="New Free E-Commerce Store Audit Request" />
-                <input type="hidden" name="_template" value="table" />
-                <input type="hidden" name="_captcha" value="false" />
-                <input type="hidden" name="_honey" value="" />
-                <input type="hidden" name="_next" value="https://vrifted-website.vercel.app/" />
+              <form onSubmit={handleSubmit} className="rounded-[2rem] border border-white/10 bg-[#0f011e]/85 p-5 sm:p-7">
                 <div className="mb-5 rounded-[1.5rem] border border-[#03cacd]/25 bg-[#03cacd]/10 p-4">
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-[#03cacd]">What happens after you submit?</p>
                   <p className="mt-2 text-sm leading-7 text-white/70">Vrifted will review your details, identify the best starting point for your store, and email you the next steps with available times for your discovery call.</p>
@@ -1279,8 +1320,6 @@ export default function VriftedWebsite() {
           </div>
         </section>
       </main>
-
-      <iframe name="formSubmitFrame" title="Form submission frame" className="hidden" />
 
       {/* Opening promotion modal: highlights the limited-time 50% service discount and sends visitors to the contact form. */}
       {promoModalOpen && (
